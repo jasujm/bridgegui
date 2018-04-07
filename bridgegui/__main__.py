@@ -239,25 +239,30 @@ class BridgeWindow(QMainWindow):
     def _handle_play_reply(self, **kwargs):
         logging.debug("Play successful")
 
-    def _handle_deal_event(self, **kwargs):
+    def _handle_deal_event(self, opener=None, vulnerability=None, **kwargs):
         logging.debug("Cards dealt")
+        self._card_area.setPositionInTurn(opener)
+        self._call_table.setVulnerability(vulnerability)
+        self._bidding_result_label.setBiddingResult(None, None)
         self._request(CARDS_TAG)
 
     def _handle_turn_event(self, position=None, **kwargs):
         logging.debug("Position in turn: %r", position)
         self._card_area.setPositionInTurn(position)
-        self._request(POSITION_IN_TURN_TAG, ALLOWED_CALLS_TAG, ALLOWED_CARDS_TAG)
+        if position == self._position:
+            self._request(ALLOWED_CALLS_TAG, ALLOWED_CARDS_TAG)
+        else:
+            self._call_panel.setAllowedCalls([])
+            self._card_area.setAllowedCards([])
 
     def _handle_call_event(self, position=None, call=None, **kwargs):
         logging.debug("Call made. Position: %r, Call: %r", position, call)
         self._call_table.addCall(position, call)
-        self._request(CALLS_TAG)
 
     def _handle_bidding_event(self, declarer=None, contract=None, **kwargs):
         logging.debug(
             "Bidding completed. Declarer: %r, Contract: %r", declarer, contract)
         self._bidding_result_label.setBiddingResult(declarer, contract)
-        self._request(DECLARER_TAG, CONTRACT_TAG)
 
     def _handle_play_event(self, position=None, card=None, **kwargs):
         logging.debug("Card played. Position: %r, Card: %r", position, card)
@@ -271,14 +276,11 @@ class BridgeWindow(QMainWindow):
     def _handle_trick_event(self, winner, **kwargs):
         logging.debug("Trick completed. Winner: %r", winner)
         self._tricks_won_label.addTrick(winner)
-        self._request(TRICKS_WON_TAG)
 
     def _handle_dealend_event(self, tricksWon=None, **kwargs):
         logging.debug("Deal ended. Tricks won: %r", tricksWon)
         self._tricks_won_label.setTricksWon(tricksWon)
-        self._request(
-            CALLS_TAG, CARDS_TAG, VULNERABILITY_TAG, SCORE_TAG, DECLARER_TAG,
-            CONTRACT_TAG)
+        self._request(SCORE_TAG)
 
 def main():
     parser = argparse.ArgumentParser(

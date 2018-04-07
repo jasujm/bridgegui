@@ -32,6 +32,7 @@ DEAL_COMMAND = b'deal'
 CALL_COMMAND = b'call'
 BIDDING_COMMAND = b'bidding'
 PLAY_COMMAND = b'play'
+TURN_COMMAND = b'turn'
 DUMMY_COMMAND = b'dummy'
 TRICK_COMMAND = b'trick'
 DEALEND_COMMAND = b'dealend'
@@ -134,6 +135,7 @@ class BridgeWindow(QMainWindow):
             self._event_socket, "event socket queue", messaging.validateEventMessage,
             {
                 self._get_event_type(DEAL_COMMAND): self._handle_deal_event,
+                self._get_event_type(TURN_COMMAND): self._handle_turn_event,
                 self._get_event_type(CALL_COMMAND): self._handle_call_event,
                 self._get_event_type(BIDDING_COMMAND): self._handle_bidding_event,
                 self._get_event_type(PLAY_COMMAND): self._handle_play_event,
@@ -239,34 +241,41 @@ class BridgeWindow(QMainWindow):
 
     def _handle_deal_event(self, **kwargs):
         logging.debug("Cards dealt")
-        self._request(POSITION_IN_TURN_TAG, ALLOWED_CALLS_TAG, CARDS_TAG)
+        self._request(CARDS_TAG)
+
+    def _handle_turn_event(self, position=None, **kwargs):
+        logging.debug("Position in turn: %r", position)
+        self._card_area.setPositionInTurn(position)
+        self._request(POSITION_IN_TURN_TAG, ALLOWED_CALLS_TAG, ALLOWED_CARDS_TAG)
 
     def _handle_call_event(self, position=None, call=None, **kwargs):
         logging.debug("Call made. Position: %r, Call: %r", position, call)
         self._call_table.addCall(position, call)
-        self._request(POSITION_IN_TURN_TAG, ALLOWED_CALLS_TAG, CALLS_TAG)
+        self._request(CALLS_TAG)
 
-    def _handle_bidding_event(self, **kwargs):
-        logging.debug("Bidding completed")
-        self._request(ALLOWED_CARDS_TAG, DECLARER_TAG, CONTRACT_TAG)
+    def _handle_bidding_event(self, declarer=None, contract=None, **kwargs):
+        logging.debug(
+            "Bidding completed. Declarer: %r, Contract: %r", declarer, contract)
+        self._bidding_result_label.setBiddingResult(declarer, contract)
+        self._request(DECLARER_TAG, CONTRACT_TAG)
 
     def _handle_play_event(self, position=None, card=None, **kwargs):
         logging.debug("Card played. Position: %r, Card: %r", position, card)
         self._card_area.playCard(position, card)
-        self._request(
-            POSITION_IN_TURN_TAG, CARDS_TAG, ALLOWED_CARDS_TAG, TRICK_TAG)
+        self._request(CARDS_TAG, TRICK_TAG)
 
     def _handle_dummy_event(self, **kwargs):
         logging.debug("Dummy hand revealed")
-        self._request(CARDS_TAG, ALLOWED_CARDS_TAG)
+        self._request(CARDS_TAG)
 
     def _handle_trick_event(self, winner, **kwargs):
         logging.debug("Trick completed. Winner: %r", winner)
         self._tricks_won_label.addTrick(winner)
         self._request(TRICKS_WON_TAG)
 
-    def _handle_dealend_event(self, **kwargs):
-        logging.debug("Deal ended")
+    def _handle_dealend_event(self, tricksWon=None, **kwargs):
+        logging.debug("Deal ended. Tricks won: %r", tricksWon)
+        self._tricks_won_label.setTricksWon(tricksWon)
         self._request(
             CALLS_TAG, CARDS_TAG, VULNERABILITY_TAG, SCORE_TAG, DECLARER_TAG,
             CONTRACT_TAG)

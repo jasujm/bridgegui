@@ -197,10 +197,7 @@ class BridgeWindow(QMainWindow):
         logging.info("Joined game %r", game)
         if game:
             self._init_game(game)
-            self._request(
-                POSITION_TAG, POSITION_IN_TURN_TAG, ALLOWED_CALLS_TAG, CALLS_TAG,
-                DECLARER_TAG, CONTRACT_TAG, ALLOWED_CARDS_TAG, CARDS_TAG,
-                TRICK_TAG, TRICKS_WON_TAG, VULNERABILITY_TAG, SCORE_TAG)
+            sendCommand(self._control_socket, GET_COMMAND, game=game)
         else:
             logging.error("Unable to join game")
 

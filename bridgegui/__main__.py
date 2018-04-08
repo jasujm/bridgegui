@@ -276,6 +276,7 @@ class BridgeWindow(QMainWindow):
 
     def _handle_dealend_event(self, tricksWon=None, **kwargs):
         logging.debug("Deal ended. Tricks won: %r", tricksWon)
+        self._call_table.setCalls([])
         self._tricks_won_label.setTricksWon(tricksWon)
         self._request(SCORE_TAG)
 

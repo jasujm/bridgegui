@@ -50,7 +50,6 @@ CARDS_TAG = "cards"
 TRICK_TAG = "trick"
 TRICKS_WON_TAG = "tricksWon"
 VULNERABILITY_TAG = "vulnerability"
-SCORE_TAG = "score"
 
 
 class BridgeWindow(QMainWindow):
@@ -204,7 +203,7 @@ class BridgeWindow(QMainWindow):
     def _handle_get_reply(
             self, position=None, allowedCalls=None, calls=None,
             allowedCards=None, cards=None, trick=None, tricksWon=None,
-            score=None, **kwargs):
+            **kwargs):
         if position:
             self._position = position
             self._card_area.setPlayerPosition(position)
@@ -227,8 +226,6 @@ class BridgeWindow(QMainWindow):
             self._tricks_won_label.setTricksWon(tricksWon)
         if VULNERABILITY_TAG in kwargs:
             self._call_table.setVulnerability(kwargs[VULNERABILITY_TAG])
-        if score is not None:
-            self._score_table.setScoreSheet(score)
 
     def _handle_call_reply(self, **kwargs):
         logging.debug("Call successful")
@@ -274,11 +271,11 @@ class BridgeWindow(QMainWindow):
         logging.debug("Trick completed. Winner: %r", winner)
         self._tricks_won_label.addTrick(winner)
 
-    def _handle_dealend_event(self, tricksWon=None, **kwargs):
-        logging.debug("Deal ended. Tricks won: %r", tricksWon)
+    def _handle_dealend_event(self, tricksWon=None, score=None, **kwargs):
+        logging.debug("Deal ended. Tricks won: %r. Score: %r", tricksWon, score)
+        self._score_table.addScore(score)
         self._call_table.setCalls([])
         self._tricks_won_label.setTricksWon(tricksWon)
-        self._request(SCORE_TAG)
 
 def main():
     parser = argparse.ArgumentParser(

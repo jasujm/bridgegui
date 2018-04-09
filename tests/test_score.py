@@ -30,12 +30,13 @@ class ScoreTableTest(unittest.TestCase):
     def tearDown(self):
         del self._app
 
-    def testSetScoresheet(self):
-        self._score_table.setScoreSheet(SCORESHEET)
+    def testAddScore(self):
+        for score in SCORESHEET:
+            self._score_table.addScore(score)
         for row, row_item in enumerate(SCORE_ITEMS):
             for col, item in enumerate(row_item):
                 self.assertEqual(self._score_table.item(row, col).text(), item)
 
-    def testSetScoresheetInvalid(self):
+    def testAddScoreInvalid(self):
         with self.assertRaises(messaging.ProtocolError):
-            self._score_table.setScoreSheet(SCORESHEET + ['invalid'])
+            self._score_table.addScore('invalid')

@@ -32,21 +32,18 @@ class ScoreTable(QTableWidget):
             5 + self.verticalHeader().width() +
             sum(self.columnWidth(n) for n in range(self.columnCount())))
 
-    def setScoreSheet(self, scoresheet):
-        """Set scoresheet
+    def addScore(self, score):
+        """Add new score
 
-        Sets scoresheet from given argument. The scoresheet is a list containing
-        one entry for each deal (see bridge protocol specification). This method
-        set one table row for each entry, assigning the score to correct
-        partnership or (in case of passed out deal) indicates that no score was
-        awarded.
+        Adds new score to the scoresheet. The score is an object containing the
+        partnership and amount of score awarded (see protocol specification). It
+        may be None, in which case passed out deal is assumed.
         """
-        new_scores = [self._generate_score_tuple(score) for score in scoresheet]
-        self.clearContents()
-        self.setRowCount(len(new_scores))
-        for row, score in enumerate(new_scores):
-            for col, amount in enumerate(score):
-                self.setItem(row, col, QTableWidgetItem(amount))
+        new_score = self._generate_score_tuple(score)
+        rows = self.rowCount()
+        self.setRowCount(rows + 1)
+        for col, amount in enumerate(new_score):
+            self.setItem(rows, col, QTableWidgetItem(amount))
 
     def _generate_score_tuple(self, score):
         if score is None:

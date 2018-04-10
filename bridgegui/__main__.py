@@ -181,7 +181,10 @@ class BridgeWindow(QMainWindow):
 
     def _handle_hello_reply(self, **kwargs):
         logging.info("Handshake successful")
-        if self._create_game and self._game_uuid:
+        if self._create_game:
+            if not self._game_uuid:
+                import uuid
+                self._game_uuid = str(uuid.uuid4())
             sendCommand(
                 self._control_socket, GAME_COMMAND, game=self._game_uuid)
         else:

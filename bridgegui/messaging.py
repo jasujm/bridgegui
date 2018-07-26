@@ -36,6 +36,19 @@ def endpoints(base):
         port += 1
 
 
+def setupCurve(socket):
+    """Setup socket as curve client
+
+    This function sets the options on the socket to make it act as curve
+    client. The curve support is experimental and uses test keypair. It does not
+    provide actual security.
+    """
+    socket.curve_serverkey = b"rq:rM>}U?@Lns47E1%kR.o@n%FcmmsL/@{H8]yf7\0"
+    socket.curve_publickey = b"Yne@$w-vo<fVvi]a<NY6T1ed:M$fCG*[IaLV{hID\0"
+    socket.curve_secretkey = b"D:)Q[IlAW!ahhC2ac:9*A}h:p?([4%wOTJ%JR%cs\0"
+
+
+
 def sendCommand(socket, command, **kwargs):
     """Send command to the backend application using the bridge protocol
 

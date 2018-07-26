@@ -51,7 +51,6 @@ TRICK_TAG = "trick"
 TRICKS_WON_TAG = "tricksWon"
 VULNERABILITY_TAG = "vulnerability"
 
-
 class BridgeWindow(QMainWindow):
     """The main window of the birdge frontend"""
 
@@ -325,8 +324,10 @@ def main():
     control_socket = zmqctx.socket(zmq.DEALER)
     identity = config.getIdentity(args.config)
     control_socket.identity = identity.bytes
+    messaging.setupCurve(control_socket)
     control_socket.connect(next(endpoint_generator))
     event_socket = zmqctx.socket(zmq.SUB)
+    messaging.setupCurve(event_socket)
     event_socket.connect(next(endpoint_generator))
 
     logging.info("Starting main window")

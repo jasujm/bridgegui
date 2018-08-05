@@ -284,6 +284,11 @@ def main():
         help="""Base endpoint of the bridge backend. Follows ZeroMQ transmit
              protocol syntax. For example: tcp://bridge.example.com:5555""")
     parser.add_argument(
+        "--curve-server-key",
+        help="""Curve server key. If provided, the sockets are setup to use
+             CURVE security mechanism with the given server key."""
+    )
+    parser.add_argument(
         "--config",
         help="""Configuration file. The file tracks the identity of the player
              withing a single bridge session. By using the same configuration
@@ -324,10 +329,10 @@ def main():
     control_socket = zmqctx.socket(zmq.DEALER)
     identity = config.getIdentity(args.config)
     control_socket.identity = identity.bytes
-    messaging.setupCurve(control_socket)
+    messaging.setupCurve(control_socket, args.curve_server_key)
     control_socket.connect(next(endpoint_generator))
     event_socket = zmqctx.socket(zmq.SUB)
-    messaging.setupCurve(event_socket)
+    messaging.setupCurve(event_socket, args.curve_server_key)
     event_socket.connect(next(endpoint_generator))
 
     logging.info("Starting main window")

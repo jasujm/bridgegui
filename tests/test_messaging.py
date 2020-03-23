@@ -9,9 +9,7 @@ from bridgegui.messaging import (
 
 ENDPOINT = 'inproc://testing'
 COMMAND = b'command'
-
-EMPTY_FRAME = b''
-REPLY_SUCCESS_PREFIX = [EMPTY_FRAME, b'\0\0\0\0']
+REPLY_SUCCESS_PREFIX = [b'', COMMAND, b'OK']
 
 
 class MessagingTest(unittest.TestCase):
@@ -44,23 +42,22 @@ class MessageQueueTest(unittest.TestCase):
         sendCommand(self._front_socket, COMMAND, arg=1)
         self.assertEqual(
             self._back_socket.recv_multipart(flags=zmq.NOBLOCK),
-            [b'', COMMAND, b'arg', b'1'])
+            [b'', COMMAND, COMMAND, b'arg', b'1'])
 
     def testIncorrectPrefix(self):
-        self._front_socket.send_multipart((b'this', b'is', b'incorrect'))
+        self._front_socket.send_multipart([b'this', b'is', b'incorrect'])
         self.assertFalse(self._message_queue.handleMessages())
 
     def testFailedStatusCode(self):
-        self._front_socket.send_multipart(
-            (b'', b'\xff\xff\xff\xff', COMMAND, b'arg', b'123'))
+        self._front_socket.send_multipart([b'', COMMAND, b'ERR', b'arg', b'123'])
         self.assertFalse(self._message_queue.handleMessages())
 
-    def testMissingCommand(self):
-        self._front_socket.send_multipart(REPLY_SUCCESS_PREFIX)
+    def testMissingStatusCode(self):
+        self._front_socket.send_multipart([b'', COMMAND])
         self.assertFalse(self._message_queue.handleMessages())
 
     def testIncorrectCommand(self):
-        self._front_socket.send_multipart(REPLY_SUCCESS_PREFIX + [b'incorrect'])
+        self._front_socket.send_multipart([b'', b'incorrect', b'OK'])
         self.assertFalse(self._message_queue.handleMessages())
 
     def testIncorrectSerialization(self):
@@ -69,12 +66,12 @@ class MessageQueueTest(unittest.TestCase):
 
     def testIncorrectArgument(self):
         self._front_socket.send_multipart(
-            REPLY_SUCCESS_PREFIX + [COMMAND, b'arg', b'not json'])
+            REPLY_SUCCESS_PREFIX + [b'arg', b'not json'])
         self.assertFalse(self._message_queue.handleMessages())
 
     def testHandleMessage(self):
         self._front_socket.send_multipart(
-            REPLY_SUCCESS_PREFIX + [COMMAND, b'arg', b'123'])
+            REPLY_SUCCESS_PREFIX + [b'arg', b'123'])
         self.assertTrue(self._message_queue.handleMessages())
         self.assertTrue(self._command_handled)
 

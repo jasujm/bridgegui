@@ -2,7 +2,6 @@
 
 import re
 import logging
-import struct
 
 import json
 import zmq
@@ -14,11 +13,7 @@ ENDPOINT_REGEX = re.compile(r"tcp://(.+):(\d+)")
 
 
 def _failed_status_code(code):
-    PACK_FMT = '>l'
-    if len(code) != struct.calcsize(PACK_FMT):
-        return False
-    code = struct.unpack(PACK_FMT, code)
-    return code[0] < 0
+    return code[:2] != b'OK'
 
 
 def endpoints(base):
@@ -61,10 +56,10 @@ def sendCommand(socket, command, **kwargs):
 
     Keyword Arguments:
     socket   -- the socket used for sending the command
-    command  -- (bytes) the command to be sent
+    command  -- (bytes) the command to be sent (also used as tag)
     **kwargs -- The arguments of the command (the values are serialized as JSON)
     """
-    parts = [b'', command]
+    parts = [b'', command, command]
     for (key, value) in kwargs.items():
         parts.extend((key.encode(), json.dumps(value).encode()))
     logging.debug("Sending command: %r", parts)
@@ -78,17 +73,19 @@ def sendCommand(socket, command, **kwargs):
 def validateControlReply(parts):
     """Validate control message reply
 
-    The function checks if the parts given as argument contain one empty frame
-    and successful (nonnegative) status code. If yes, the prefix is stripped and
-    the rest of the parts returned. Otherwise None is returned.
+    The function checks if the parts given as argument contain one
+    empty frame and successful status code. If yes, the command frame
+    and the argument frames are returned as tuple. Otherwise (None,
+    None) is returned.
 
     Keyword Arguments:
     parts -- the message frames (list of bytes)
+
     """
-    if (len(parts) < 2 or parts[0] != EMPTY_FRAME or
-        _failed_status_code(parts[1])):
-        return None
-    return parts[2:]
+    if (len(parts) < 3 or parts[0] != EMPTY_FRAME or
+        _failed_status_code(parts[2])):
+        return None, None
+    return parts[1], parts[3:]
 
 
 def validateEventMessage(parts):
@@ -97,7 +94,7 @@ def validateEventMessage(parts):
     This function just returns its arguments as is (there is nothing to validate
     about event message).
     """
-    return parts
+    return parts[0], parts[1:]
 
 
 class ProtocolError(Exception):
@@ -167,14 +164,17 @@ class MessageQueue:
 
     def _handle_message(self, parts):
         logging.debug("Received message: %r", parts)
-        parts = self._validator(parts)
-        if not parts:
+        command, parts = self._validator(parts)
+        if command is None or parts is None:
             raise ProtocolError("Invalid message parts: %r" % parts)
-        command = self._handlers.get(parts[0], None)
-        if not command:
-            raise ProtocolError("Unrecognized command: %r" % parts[0])
+        command_handler = self._handlers.get(command, None)
+        if not command_handler:
+            raise ProtocolError("Unrecognized command: %r" % command)
+        if len(parts) % 2 != 0:
+            raise ProtocolError(
+                "Expecting even number of parameter frames, got: %r" % parts)
         kwargs = {}
-        for n in range(1, len(parts)-1, 2):
+        for n in range(0, len(parts), 2):
             key = parts[n].decode()
             value = parts[n+1].decode()
             try:
@@ -182,4 +182,4 @@ class MessageQueue:
             except json.decoder.JSONDecodeError as e:
                 raise ProtocolError("Error while parsing %r: %r" % (value, e))
             kwargs[key] = value
-        command(**kwargs)
+        command_handler(**kwargs)

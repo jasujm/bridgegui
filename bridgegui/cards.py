@@ -305,6 +305,8 @@ class TrickPanel(QWidget):
             self._cards.append((position, card))
             self._timer.stop()
             self.repaint()
+        if len(self._cards) == len(positions.Position):
+            self._timer.start()
 
     def cards(self):
         """Return list containing the positions and cards played to the trick

@@ -178,7 +178,7 @@ class BridgeWindow(QMainWindow):
 
     def _request(self, *args):
         sendCommand(
-            self._control_socket, GET_COMMAND, game=self._game_uuid, keys=args)
+            self._control_socket, GET_COMMAND, game=self._game_uuid, get=args)
 
     def _send_join_command(self):
         kwargs = {}
@@ -228,9 +228,9 @@ class BridgeWindow(QMainWindow):
         else:
             logging.warning("No counter included in get reply")
         missing = object()
-        pubstate = get.get(PUBSTATE_TAG)
-        privstate = get.get(PRIVSTATE_TAG)
-        _self = get.get(SELF_TAG)
+        pubstate = get.get(PUBSTATE_TAG, {})
+        privstate = get.get(PRIVSTATE_TAG, {})
+        _self = get.get(SELF_TAG, {})
         position = _self.get(POSITION_TAG, missing)
         if position is not missing and position != self._position:
             self._position = position

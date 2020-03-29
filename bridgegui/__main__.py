@@ -103,7 +103,7 @@ class BridgeWindow(QMainWindow):
         self._connect_socket_to_notifier(
             control_socket, self._control_socket_queue)
         self._event_socket = event_socket
-        sendCommand(control_socket, HELLO_COMMAND, version=[0], role=CLIENT_TAG)
+        sendCommand(control_socket, HELLO_COMMAND, version="0.1", role=CLIENT_TAG)
 
     def _init_widgets(self):
         logging.info("Initializing widgets")

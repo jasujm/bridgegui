@@ -199,32 +199,41 @@ class BridgeWindow(QMainWindow):
         else:
             logging.error("Unable to join game")
 
-    def _handle_get_reply(
-            self, position=None, allowedCalls=None, calls=None,
-            allowedCards=None, cards=None, trick=None, tricksWon=None,
-            **kwargs):
-        if position:
+    def _handle_get_reply(self, get=None, **kwargs):
+        missing = object()
+        position = get.get(POSITION_TAG, missing)
+        if position is not missing:
             self._position = position
             self._card_area.setPlayerPosition(position)
-        if POSITION_IN_TURN_TAG in kwargs:
-            self._card_area.setPositionInTurn(kwargs[POSITION_IN_TURN_TAG])
-        if allowedCalls is not None:
-            self._call_panel.setAllowedCalls(allowedCalls)
-        if calls is not None:
+        position_in_turn = get.get(POSITION_IN_TURN_TAG, missing)
+        if position_in_turn is not missing:
+            self._card_area.setPositionInTurn(position_in_turn)
+        allowed_calls = get.get(ALLOWED_CALLS_TAG, missing)
+        if allowed_calls is not missing:
+            self._call_panel.setAllowedCalls(allowed_calls)
+        calls = get.get(CALLS_TAG, missing)
+        if calls is not missing:
             self._call_table.setCalls(calls)
-        if DECLARER_TAG in kwargs and CONTRACT_TAG in kwargs:
+        declarer = get.get(DECLARER_TAG, missing)
+        contract = get.get(CONTRACT_TAG, missing)
+        if declarer is not missing and contract is not missing:
             self._bidding_result_label.setBiddingResult(
-                kwargs[DECLARER_TAG], kwargs[CONTRACT_TAG])
-        if cards is not None:
+                declarer, contract)
+        cards = get.get(CARDS_TAG, missing)
+        if cards is not missing:
             self._card_area.setCards(cards)
-        if allowedCards is not None:
-            self._card_area.setAllowedCards(allowedCards)
-        if trick is not None:
+        allowed_cards = get.get(ALLOWED_CARDS_TAG, missing)
+        if allowed_cards is not missing:
+            self._card_area.setAllowedCards(allowed_cards)
+        trick = get.get(TRICK_TAG, missing)
+        if trick is not missing:
             self._card_area.setTrick(trick)
-        if tricksWon is not None:
-            self._tricks_won_label.setTricksWon(tricksWon)
-        if VULNERABILITY_TAG in kwargs:
-            self._call_table.setVulnerability(kwargs[VULNERABILITY_TAG])
+        tricks_won = get.get(TRICKS_WON_TAG, missing)
+        if tricks_won is not missing:
+            self._tricks_won_label.setTricksWon(tricks_won)
+        vulnerability = get.get(VULNERABILITY_TAG, missing)
+        if vulnerability is not missing:
+            self._call_table.setVulnerability(vulnerability)
 
     def _handle_call_reply(self, **kwargs):
         logging.debug("Call successful")

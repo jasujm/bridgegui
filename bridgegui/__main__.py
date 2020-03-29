@@ -223,7 +223,7 @@ class BridgeWindow(QMainWindow):
         self._start_handling_events()
 
     def _handle_get_reply(self, get=None, counter=None, **kwargs):
-        if counter:
+        if counter is not None:
             self._counter = counter
         else:
             logging.warning("No counter included in get reply")

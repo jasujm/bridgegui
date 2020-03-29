@@ -41,6 +41,9 @@ DEALEND_COMMAND = b'dealend'
 CLIENT_TAG = "client"
 POSITION_TAG = "position"
 GAME_TAG = "game"
+PUBSTATE_TAG = "pubstate"
+PRIVSTATE_TAG = "privstate"
+SELF_TAG = "self"
 POSITION_IN_TURN_TAG = "positionInTurn"
 ALLOWED_CALLS_TAG = "allowedCalls"
 CALLS_TAG = "calls"
@@ -225,37 +228,41 @@ class BridgeWindow(QMainWindow):
         else:
             logging.warning("No counter included in get reply")
         missing = object()
-        position = get.get(POSITION_TAG, missing)
-        if position is not missing:
+        pubstate = get.get(PUBSTATE_TAG)
+        privstate = get.get(PRIVSTATE_TAG)
+        _self = get.get(SELF_TAG)
+        position = _self.get(POSITION_TAG, missing)
+        if position is not missing and position != self._position:
             self._position = position
             self._card_area.setPlayerPosition(position)
-        position_in_turn = get.get(POSITION_IN_TURN_TAG, missing)
+        position_in_turn = _self.get(POSITION_IN_TURN_TAG, missing)
         if position_in_turn is not missing:
             self._card_area.setPositionInTurn(position_in_turn)
-        allowed_calls = get.get(ALLOWED_CALLS_TAG, missing)
+        allowed_calls = _self.get(ALLOWED_CALLS_TAG, missing)
         if allowed_calls is not missing:
             self._call_panel.setAllowedCalls(allowed_calls)
-        calls = get.get(CALLS_TAG, missing)
+        calls = pubstate.get(CALLS_TAG, missing)
         if calls is not missing:
             self._call_table.setCalls(calls)
-        declarer = get.get(DECLARER_TAG, missing)
-        contract = get.get(CONTRACT_TAG, missing)
+        declarer = pubstate.get(DECLARER_TAG, missing)
+        contract = pubstate.get(CONTRACT_TAG, missing)
         if declarer is not missing and contract is not missing:
             self._bidding_result_label.setBiddingResult(
                 declarer, contract)
-        cards = get.get(CARDS_TAG, missing)
-        if cards is not missing:
+        cards = pubstate.get(CARDS_TAG, {})
+        cards.update(privstate.get(CARDS_TAG, {}))
+        if cards:
             self._card_area.setCards(cards)
-        allowed_cards = get.get(ALLOWED_CARDS_TAG, missing)
+        allowed_cards = _self.get(ALLOWED_CARDS_TAG, missing)
         if allowed_cards is not missing:
             self._card_area.setAllowedCards(allowed_cards)
-        trick = get.get(TRICK_TAG, missing)
+        trick = pubstate.get(TRICK_TAG, missing)
         if trick is not missing:
             self._card_area.setTrick(trick)
-        tricks_won = get.get(TRICKS_WON_TAG, missing)
+        tricks_won = pubstate.get(TRICKS_WON_TAG, missing)
         if tricks_won is not missing:
             self._tricks_won_label.setTricksWon(tricks_won)
-        vulnerability = get.get(VULNERABILITY_TAG, missing)
+        vulnerability = pubstate.get(VULNERABILITY_TAG, missing)
         if vulnerability is not missing:
             self._call_table.setVulnerability(vulnerability)
 
@@ -273,7 +280,7 @@ class BridgeWindow(QMainWindow):
         self._card_area.setPositionInTurn(opener)
         self._call_table.setVulnerability(vulnerability)
         self._bidding_result_label.setBiddingResult(None, None)
-        self._request(CARDS_TAG)
+        self._request(PUBSTATE_TAG, PRIVSTATE_TAG)
 
     def _handle_turn_event(self, position=None, counter=None, **kwargs):
         if self._is_stale_event(counter):
@@ -281,7 +288,7 @@ class BridgeWindow(QMainWindow):
         logging.debug("Position in turn: %r", position)
         self._card_area.setPositionInTurn(position)
         if position == self._position:
-            self._request(ALLOWED_CALLS_TAG, ALLOWED_CARDS_TAG)
+            self._request(SELF_TAG)
         else:
             self._call_panel.setAllowedCalls([])
             self._card_area.setAllowedCards([])
@@ -307,13 +314,12 @@ class BridgeWindow(QMainWindow):
             return
         logging.debug("Card played. Position: %r, Card: %r", position, card)
         self._card_area.playCard(position, card)
-        self._request(CARDS_TAG, TRICK_TAG)
 
     def _handle_dummy_event(self, counter=None, **kwargs):
         if self._is_stale_event(counter):
             return
         logging.debug("Dummy hand revealed")
-        self._request(CARDS_TAG)
+        self._request(PUBSTATE_TAG)
 
     def _handle_trick_event(self, winner, counter=None, **kwargs):
         if self._is_stale_event(counter):

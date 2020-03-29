@@ -51,15 +51,16 @@ def setupCurve(socket, serverKey):
 
 
 
-def sendCommand(socket, command, **kwargs):
+def sendCommand(socket, command, _tag=None, **kwargs):
     """Send command to the backend application using the bridge protocol
 
     Keyword Arguments:
     socket   -- the socket used for sending the command
-    command  -- (bytes) the command to be sent (also used as tag)
+    command  -- (bytes) the command to be sent (also used as tag unless _tag is given)
+    _tag     -- (bytes) the tag to be sent (overrides the default)
     **kwargs -- The arguments of the command (the values are serialized as JSON)
     """
-    parts = [b'', command, command]
+    parts = [b'', _tag or command, command]
     for (key, value) in kwargs.items():
         parts.extend((key.encode(), json.dumps(value).encode()))
     logging.debug("Sending command: %r", parts)

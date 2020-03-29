@@ -27,6 +27,7 @@ import bridgegui.tricks as tricks
 HELLO_COMMAND = b'bridgehlo'
 GAME_COMMAND = b'game'
 JOIN_COMMAND = b'join'
+INITGET_COMMAND = b'initget'
 GET_COMMAND = b'get'
 DEAL_COMMAND = b'deal'
 CALL_COMMAND = b'call'
@@ -91,6 +92,7 @@ class BridgeWindow(QMainWindow):
                 HELLO_COMMAND: self._handle_hello_reply,
                 GAME_COMMAND: self._handle_game_reply,
                 JOIN_COMMAND: self._handle_join_reply,
+                INITGET_COMMAND: self._handle_init_get_reply,
                 GET_COMMAND: self._handle_get_reply,
                 CALL_COMMAND: self._handle_call_reply,
                 PLAY_COMMAND: self._handle_play_reply,
@@ -122,6 +124,18 @@ class BridgeWindow(QMainWindow):
         self._score_table = score.ScoreTable(self._central_widget)
         self._layout.addWidget(self._score_table)
         self.setCentralWidget(self._central_widget)
+        self._counter = None
+
+    def _is_stale_event(self, counter):
+        if not counter:
+            return False
+        elif self._counter and self._counter > counter:
+            logging.debug(
+                "Stale event, counter: %r, self._counter %r",
+                counter, self._counter)
+            return True
+        else:
+            return False
 
     def _get_event_type(self, name):
         return self._game_uuid.encode() + b':' + name
@@ -141,6 +155,8 @@ class BridgeWindow(QMainWindow):
                 self._get_event_type(TRICK_COMMAND): self._handle_trick_event,
                 self._get_event_type(DEALEND_COMMAND): self._handle_dealend_event,
             })
+
+    def _start_handling_events(self):
         self._connect_socket_to_notifier(
             self._event_socket, self._event_socket_queue)
 
@@ -195,11 +211,19 @@ class BridgeWindow(QMainWindow):
         logging.info("Joined game %r", game)
         if game:
             self._init_game(game)
-            sendCommand(self._control_socket, GET_COMMAND, game=game)
+            sendCommand(self._control_socket, GET_COMMAND, INITGET_COMMAND, game=game)
         else:
             logging.error("Unable to join game")
 
-    def _handle_get_reply(self, get=None, **kwargs):
+    def _handle_init_get_reply(self, get=None, counter=None, **kwargs):
+        self._handle_get_reply(get, counter, **kwargs)
+        self._start_handling_events()
+
+    def _handle_get_reply(self, get=None, counter=None, **kwargs):
+        if counter:
+            self._counter = counter
+        else:
+            logging.warning("No counter included in get reply")
         missing = object()
         position = get.get(POSITION_TAG, missing)
         if position is not missing:
@@ -241,14 +265,19 @@ class BridgeWindow(QMainWindow):
     def _handle_play_reply(self, **kwargs):
         logging.debug("Play successful")
 
-    def _handle_deal_event(self, opener=None, vulnerability=None, **kwargs):
+    def _handle_deal_event(
+            self, opener=None, vulnerability=None, counter=None, **kwargs):
+        if self._is_stale_event(counter):
+            return
         logging.debug("Cards dealt")
         self._card_area.setPositionInTurn(opener)
         self._call_table.setVulnerability(vulnerability)
         self._bidding_result_label.setBiddingResult(None, None)
         self._request(CARDS_TAG)
 
-    def _handle_turn_event(self, position=None, **kwargs):
+    def _handle_turn_event(self, position=None, counter=None, **kwargs):
+        if self._is_stale_event(counter):
+            return
         logging.debug("Position in turn: %r", position)
         self._card_area.setPositionInTurn(position)
         if position == self._position:
@@ -257,29 +286,45 @@ class BridgeWindow(QMainWindow):
             self._call_panel.setAllowedCalls([])
             self._card_area.setAllowedCards([])
 
-    def _handle_call_event(self, position=None, call=None, **kwargs):
+    def _handle_call_event(
+            self, position=None, call=None, counter=None, **kwargs):
+        if self._is_stale_event(counter):
+            return
         logging.debug("Call made. Position: %r, Call: %r", position, call)
         self._call_table.addCall(position, call)
 
-    def _handle_bidding_event(self, declarer=None, contract=None, **kwargs):
+    def _handle_bidding_event(
+            self, declarer=None, contract=None, counter=None, **kwargs):
+        if self._is_stale_event(counter):
+            return
         logging.debug(
             "Bidding completed. Declarer: %r, Contract: %r", declarer, contract)
         self._bidding_result_label.setBiddingResult(declarer, contract)
 
-    def _handle_play_event(self, position=None, card=None, **kwargs):
+    def _handle_play_event(
+            self, position=None, card=None, counter=None, **kwargs):
+        if self._is_stale_event(counter):
+            return
         logging.debug("Card played. Position: %r, Card: %r", position, card)
         self._card_area.playCard(position, card)
         self._request(CARDS_TAG, TRICK_TAG)
 
-    def _handle_dummy_event(self, **kwargs):
+    def _handle_dummy_event(self, counter=None, **kwargs):
+        if self._is_stale_event(counter):
+            return
         logging.debug("Dummy hand revealed")
         self._request(CARDS_TAG)
 
-    def _handle_trick_event(self, winner, **kwargs):
+    def _handle_trick_event(self, winner, counter=None, **kwargs):
+        if self._is_stale_event(counter):
+            return
         logging.debug("Trick completed. Winner: %r", winner)
         self._tricks_won_label.addTrick(winner)
 
-    def _handle_dealend_event(self, tricksWon=None, score=None, **kwargs):
+    def _handle_dealend_event(
+            self, tricksWon=None, score=None, counter=None, **kwargs):
+        if self._is_stale_event(counter):
+            return
         logging.debug("Deal ended. Tricks won: %r. Score: %r", tricksWon, score)
         self._score_table.addScore(score)
         self._call_table.setCalls([])

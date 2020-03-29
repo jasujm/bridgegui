@@ -315,11 +315,12 @@ class BridgeWindow(QMainWindow):
         logging.debug("Card played. Position: %r, Card: %r", position, card)
         self._card_area.playCard(position, card)
 
-    def _handle_dummy_event(self, counter=None, **kwargs):
+    def _handle_dummy_event(
+            self, counter=None, position=None, cards=None, **kwargs):
         if self._is_stale_event(counter):
             return
         logging.debug("Dummy hand revealed")
-        self._request(PUBSTATE_TAG)
+        self._card_area.setCards({ position: cards })
 
     def _handle_trick_event(self, winner, counter=None, **kwargs):
         if self._is_stale_event(counter):

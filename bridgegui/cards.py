@@ -171,6 +171,7 @@ class HandPanel(QWidget):
                 pop_n = n
         if pop_n is not None:
             self._cards.pop(pop_n)
+            self.setCards(card[0] for card in self._cards)
             self.repaint()
 
     def cards(self):

@@ -20,6 +20,7 @@ import bridgegui.cards as cards
 import bridgegui.config as config
 import bridgegui.messaging as messaging
 from bridgegui.messaging import sendCommand
+import bridgegui.positions as positions
 from bridgegui.positions import POSITION_TAGS
 import bridgegui.score as score
 import bridgegui.tricks as tricks
@@ -51,8 +52,7 @@ DECLARER_TAG = "declarer"
 CONTRACT_TAG = "contract"
 ALLOWED_CARDS_TAG = "allowedCards"
 CARDS_TAG = "cards"
-TRICK_TAG = "trick"
-TRICKS_WON_TAG = "tricksWon"
+TRICKS_TAG = "tricks"
 VULNERABILITY_TAG = "vulnerability"
 
 class BridgeWindow(QMainWindow):
@@ -256,11 +256,19 @@ class BridgeWindow(QMainWindow):
         allowed_cards = _self.get(ALLOWED_CARDS_TAG, missing)
         if allowed_cards is not missing:
             self._card_area.setAllowedCards(allowed_cards)
-        trick = pubstate.get(TRICK_TAG, missing)
-        if trick is not missing:
-            self._card_area.setTrick(trick)
-        tricks_won = pubstate.get(TRICKS_WON_TAG, missing)
-        if tricks_won is not missing:
+        tricks = pubstate.get(TRICKS_TAG, missing)
+        if tricks is not missing:
+            if tricks:
+                trick = tricks[-1].get("cards")
+                if trick:
+                    self._card_area.setTrick(trick)
+            tricks_won = {
+                partnership: 0 for partnership in positions.Partnership
+            }
+            for trick in tricks:
+                winner = trick.get("winner")
+                if winner:
+                    tricks_won[positions.partnershipFor(winner)] += 1
             self._tricks_won_label.setTricksWon(tricks_won)
         vulnerability = pubstate.get(VULNERABILITY_TAG, missing)
         if vulnerability is not missing:
@@ -328,14 +336,12 @@ class BridgeWindow(QMainWindow):
         logging.debug("Trick completed. Winner: %r", winner)
         self._tricks_won_label.addTrick(winner)
 
-    def _handle_dealend_event(
-            self, tricksWon=None, score=None, counter=None, **kwargs):
+    def _handle_dealend_event(self, score=None, counter=None, **kwargs):
         if self._is_stale_event(counter):
             return
-        logging.debug("Deal ended. Tricks won: %r. Score: %r", tricksWon, score)
+        logging.debug("Deal ended. Score: %r", score)
         self._score_table.addScore(score)
         self._call_table.setCalls([])
-        self._tricks_won_label.setTricksWon(tricksWon)
 
 def main():
     parser = argparse.ArgumentParser(

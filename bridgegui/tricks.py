@@ -36,7 +36,7 @@ class TricksWonLabel(QLabel):
         tricksWon -- the tricks won object
         """
         try:
-            self._tricks = [int(tricksWon[tag]) for tag in PARTNERSHIP_TAGS]
+            self._tricks = [int(tricksWon[partnership]) for partnership in Partnership]
         except Exception:
             raise messaging.ProtocolError(
                 "Invalid tricks won object: %r" % tricksWon)

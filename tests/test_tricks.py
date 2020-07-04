@@ -20,7 +20,7 @@ class TricksWonLabelTest(unittest.TestCase):
         self._app = QApplication(sys.argv)
         self._tricks_won_label = tricks.TricksWonLabel()
         self._tricks_won = {
-            tag: random.randrange(13) for tag in positions.PARTNERSHIP_TAGS }
+            partnership: random.randrange(13) for partnership in positions.Partnership }
 
     def tearDown(self):
         del self._app
@@ -49,5 +49,5 @@ class TricksWonLabelTest(unittest.TestCase):
     def _assert_text_helper(self, partnership, extra=0):
         label = "%s: %d" % (
             positions.partnershipLabel(partnership),
-            self._tricks_won[positions.PARTNERSHIP_TAGS[partnership]] + extra)
+            self._tricks_won[partnership] + extra)
         self.assertIn(label, self._tricks_won_label.text())

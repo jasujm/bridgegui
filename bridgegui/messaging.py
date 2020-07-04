@@ -46,8 +46,9 @@ def setupCurve(socket, serverKey):
     if not serverKey:
         return
     socket.curve_serverkey = serverKey.encode() + b'\0'
-    socket.curve_publickey = b"Yne@$w-vo<fVvi]a<NY6T1ed:M$fCG*[IaLV{hID\0"
-    socket.curve_secretkey = b"D:)Q[IlAW!ahhC2ac:9*A}h:p?([4%wOTJ%JR%cs\0"
+    public, secret = zmq.curve_keypair()
+    socket.curve_publickey = public + b'\0'
+    socket.curve_secretkey = secret + b'\0'
 
 
 

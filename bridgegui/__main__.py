@@ -17,7 +17,6 @@ import zmq
 
 import bridgegui.bidding as bidding
 import bridgegui.cards as cards
-import bridgegui.config as config
 import bridgegui.messaging as messaging
 from bridgegui.messaging import sendCommand
 import bridgegui.positions as positions
@@ -358,15 +357,6 @@ def main():
         type=argparse.FileType("r")
     )
     parser.add_argument(
-        "--config",
-        help="""Configuration file. The file tracks the identity of the player
-             withing a single bridge session. By using the same configuration
-             file between runs, the game session can be preserved.
-
-             If the file does not exist, it will be created with a new random
-             identity. It is possible to play without config file but in that
-             case preserving the session is not possible.""")
-    parser.add_argument(
         '--position',
         help="""If provided, the application requests the server to assign the
              given position. If the position is not available (or if the option
@@ -396,8 +386,6 @@ def main():
     zmqctx = zmq.Context.instance()
     endpoint_generator = messaging.endpoints(args.endpoint)
     control_socket = zmqctx.socket(zmq.DEALER)
-    identity = config.getIdentity(args.config)
-    control_socket.identity = identity.bytes
     if args.server_key_file:
         with args.server_key_file:
             curve_server_key = args.server_key_file.readline().strip()

@@ -227,9 +227,9 @@ class BridgeWindow(QMainWindow):
         else:
             logging.warning("No counter included in get reply")
         missing = object()
-        pubstate = get.get(PUBSTATE_TAG, {})
-        privstate = get.get(PRIVSTATE_TAG, {})
-        _self = get.get(SELF_TAG, {})
+        pubstate = get.get(PUBSTATE_TAG) or {}
+        privstate = get.get(PRIVSTATE_TAG) or {}
+        _self = get.get(SELF_TAG) or {}
         position = _self.get(POSITION_TAG, missing)
         if position is not missing and position != self._position:
             self._position = position

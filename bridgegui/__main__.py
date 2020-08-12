@@ -9,6 +9,7 @@ import json
 import logging
 import re
 import sys
+import uuid
 
 from PyQt5.QtCore import QSocketNotifier, QTimer
 from PyQt5.QtWidgets import (
@@ -59,7 +60,7 @@ class BridgeWindow(QMainWindow):
 
     def __init__(
             self, control_socket, event_socket, position, game_uuid,
-            create_game):
+            create_game, player_uuid):
         """Initialize BridgeWindow
 
         Keyword Arguments:
@@ -73,6 +74,7 @@ class BridgeWindow(QMainWindow):
         self._position = None
         self._preferred_position = position
         self._game_uuid = game_uuid
+        self._player_uuid = player_uuid if player_uuid else str(uuid.uuid4())
         self._create_game = create_game
         self._timer = QTimer(self)
         self._timer.setInterval(1000)
@@ -177,7 +179,8 @@ class BridgeWindow(QMainWindow):
 
     def _request(self, *args):
         sendCommand(
-            self._control_socket, GET_COMMAND, game=self._game_uuid, get=args)
+            self._control_socket, GET_COMMAND, game=self._game_uuid,
+            player=self._player_uuid, get=args)
 
     def _send_join_command(self):
         kwargs = {}
@@ -185,16 +188,19 @@ class BridgeWindow(QMainWindow):
             kwargs[POSITION_TAG] = self._preferred_position
         if self._game_uuid:
             kwargs[GAME_TAG] = self._game_uuid
-        sendCommand(self._control_socket, JOIN_COMMAND, **kwargs)
+        sendCommand(
+            self._control_socket, JOIN_COMMAND,
+            player=self._player_uuid, **kwargs)
 
     def _send_call_command(self, call):
         sendCommand(
-            self._control_socket, CALL_COMMAND, game=self._game_uuid, call=call)
+            self._control_socket, CALL_COMMAND, game=self._game_uuid,
+            player=self._player_uuid, call=call)
 
     def _send_play_command(self, card):
         sendCommand(
             self._control_socket, PLAY_COMMAND, game=self._game_uuid,
-            card=card._asdict())
+            player=self._player_uuid, card=card._asdict())
 
     def _handle_hello_reply(self, **kwargs):
         logging.info("Handshake successful")
@@ -213,7 +219,9 @@ class BridgeWindow(QMainWindow):
         logging.info("Joined game %r", game)
         if game:
             self._init_game(game)
-            sendCommand(self._control_socket, GET_COMMAND, INITGET_COMMAND, game=game)
+            sendCommand(
+                self._control_socket, GET_COMMAND, INITGET_COMMAND,
+                game=game, player=self._player_uuid)
         else:
             logging.error("Unable to join game")
 
@@ -370,6 +378,9 @@ def main():
         help="""If given, the application requests the backend to create new
              game. UUID can be optionally given by providing --game option.""")
     parser.add_argument(
+        '--player',
+        help="""UUID of the player. If omitted, an UUID is generated.""")
+    parser.add_argument(
         "--verbose", "-v", action="count", default=0,
         help="""Increase logging levels. Repeat for even more logging.""")
     args = parser.parse_args()
@@ -401,7 +412,7 @@ def main():
     app = QApplication(sys.argv)
     window = BridgeWindow(
         control_socket, event_socket, args.position, args.game,
-        args.create_game)
+        args.create_game, args.player)
     code = app.exec_()
 
     logging.info("Main window closed. Closing sockets.")

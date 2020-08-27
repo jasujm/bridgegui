@@ -31,7 +31,7 @@ def endpoints(base):
         port += 1
 
 
-def setupCurve(socket, serverKey):
+def setupCurve(socket, serverKey, secretKey=None, publicKey=None):
     """Setup socket as curve client
 
     This function sets the options on the socket to make it act as CURVE
@@ -41,14 +41,20 @@ def setupCurve(socket, serverKey):
     Keyword Arguments:
     socket -- the ZeroMQ socket
     serverKey -- the public key of the server to be connected to
+    secretKey -- the secret key of the client
+    secretKey -- the public key of the client
 
     """
     if not serverKey:
         return
     socket.curve_serverkey = serverKey.encode() + b'\0'
-    public, secret = zmq.curve_keypair()
-    socket.curve_publickey = public + b'\0'
-    socket.curve_secretkey = secret + b'\0'
+    if not secretKey or not publicKey:
+        publicKey, secretKey = zmq.curve_keypair()
+    else:
+        publicKey = publicKey.encode()
+        secretKey = secretKey.encode()
+    socket.curve_publickey = publicKey + b'\0'
+    socket.curve_secretkey = secretKey + b'\0'
 
 
 

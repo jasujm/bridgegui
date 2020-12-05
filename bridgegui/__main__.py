@@ -343,11 +343,11 @@ class BridgeWindow(QMainWindow):
         logging.debug("Trick completed. Winner: %r", winner)
         self._tricks_won_label.addTrick(winner)
 
-    def _handle_dealend_event(self, score=None, counter=None, **kwargs):
+    def _handle_dealend_event(self, result, counter=None, **kwargs):
         if self._is_stale_event(counter):
             return
-        logging.debug("Deal ended. Score: %r", score)
-        self._score_table.addScore(score)
+        logging.debug("Deal ended. Result: %r", result)
+        self._score_table.addResult(result)
         self._call_table.setCalls([])
 
 def _get_key_from_file(f):

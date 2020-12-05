@@ -7,8 +7,8 @@ import bridgegui.messaging as messaging
 import bridgegui.positions as positions
 import bridgegui.score as score
 
-SCORESHEET = [
-    None,
+RESULTSHEET = [
+    dict(partnership=None, score=0),
     dict(partnership=positions.NORTH_SOUTH_TAG, score=100),
     dict(partnership=positions.EAST_WEST_TAG, score=200),
 ]
@@ -30,13 +30,13 @@ class ScoreTableTest(unittest.TestCase):
     def tearDown(self):
         del self._app
 
-    def testAddScore(self):
-        for score in SCORESHEET:
-            self._score_table.addScore(score)
+    def testAddResult(self):
+        for result in RESULTSHEET:
+            self._score_table.addResult(result)
         for row, row_item in enumerate(SCORE_ITEMS):
             for col, item in enumerate(row_item):
                 self.assertEqual(self._score_table.item(row, col).text(), item)
 
-    def testAddScoreInvalid(self):
+    def testAddResultInvalid(self):
         with self.assertRaises(messaging.ProtocolError):
-            self._score_table.addScore('invalid')
+            self._score_table.addResult('invalid')

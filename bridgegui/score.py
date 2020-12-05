@@ -32,28 +32,28 @@ class ScoreTable(QTableWidget):
             5 + self.verticalHeader().width() +
             sum(self.columnWidth(n) for n in range(self.columnCount())))
 
-    def addScore(self, score):
+    def addResult(self, result):
         """Add new score
 
         Adds new score to the scoresheet. The score is an object containing the
-        partnership and amount of score awarded (see protocol specification). It
-        may be None, in which case passed out deal is assumed.
+        partnership and amount of score awarded (see protocol specification).
+        The partnership may be None, in which case passed out deal is assumed.
         """
-        new_score = self._generate_score_tuple(score)
+        new_score = self._generate_score_tuple(result)
         rows = self.rowCount()
         self.setRowCount(rows + 1)
         for col, amount in enumerate(new_score):
             self.setItem(rows, col, QTableWidgetItem(amount))
 
-    def _generate_score_tuple(self, score):
-        if score is None:
-            return ("0", "0")
+    def _generate_score_tuple(self, result):
         try:
-            amount = str(score[SCORE_TAG])
-            winner = positions.asPartnership(score[PARTNERSHIP_TAG])
+            if result[PARTNERSHIP_TAG] is None:
+                return ("0", "0")
+            amount = str(result[SCORE_TAG])
+            winner = positions.asPartnership(result[PARTNERSHIP_TAG])
             if winner == positions.Partnership.northSouth:
                 return (amount, "0")
             else:
                 return ("0", amount)
         except Exception:
-            raise messaging.ProtocolError("Invalid score: %r" % score)
+            raise messaging.ProtocolError("Invalid result: %r" % result)

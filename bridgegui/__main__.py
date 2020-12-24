@@ -38,6 +38,7 @@ TURN_COMMAND = b'turn'
 DUMMY_COMMAND = b'dummy'
 TRICK_COMMAND = b'trick'
 DEALEND_COMMAND = b'dealend'
+PLAYER_COMMAND = b'player'
 
 CLIENT_TAG = "client"
 POSITION_TAG = "position"
@@ -158,6 +159,7 @@ class BridgeWindow(QMainWindow):
                 self._get_event_type(DUMMY_COMMAND): self._handle_dummy_event,
                 self._get_event_type(TRICK_COMMAND): self._handle_trick_event,
                 self._get_event_type(DEALEND_COMMAND): self._handle_dealend_event,
+                self._get_event_type(PLAYER_COMMAND): self._handle_player_event,
             })
 
     def _start_handling_events(self):
@@ -349,6 +351,9 @@ class BridgeWindow(QMainWindow):
         logging.debug("Deal ended. Result: %r", result)
         self._score_table.addResult(result)
         self._call_table.setCalls([])
+
+    def _handle_player_event(self, player, position, **kwargs):
+        logging.debug("Player joined. Player: %r. Position: %r", player, position)
 
 def _get_key_from_file(f):
     if f:
